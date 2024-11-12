@@ -6,7 +6,6 @@ advent_of_code::solution!(1);
 use std::collections::HashSet;
 use std::hash::Hash;
 
-
 #[derive(Debug, Copy, Clone)]
 enum Turn {
     Left,
@@ -32,19 +31,19 @@ struct Pos {
 
 impl Pos {
     fn walk_north(&mut self, length: u32) {
-       self.y = self.y.saturating_add_unsigned(length);
+        self.y = self.y.saturating_add_unsigned(length);
     }
 
     fn walk_south(&mut self, length: u32) {
-       self.y = self.y.saturating_sub_unsigned(length);
+        self.y = self.y.saturating_sub_unsigned(length);
     }
 
     fn walk_west(&mut self, length: u32) {
-       self.x = self.x.saturating_sub_unsigned(length);
+        self.x = self.x.saturating_sub_unsigned(length);
     }
 
     fn walk_east(&mut self, length: u32) {
-       self.x = self.x.saturating_add_unsigned(length);
+        self.x = self.x.saturating_add_unsigned(length);
     }
 
     fn distance_to_origin(self) -> u32 {
@@ -63,10 +62,7 @@ struct State {
 impl State {
     fn init() -> Self {
         Self {
-            pos: Pos {
-                x: 0,
-                y: 0,
-            },
+            pos: Pos { x: 0, y: 0 },
             dir: FaceDir::N,
         }
     }
@@ -98,16 +94,16 @@ impl State {
         };
     }
 
-    fn next_location(&mut self, step: &Step) -> Self {        
+    fn next_location(&mut self, step: &Step) -> Self {
         match step {
             Step(Turn::Left, length) => {
                 self.turn_left();
                 self.walk_for(*length);
-            },
+            }
             Step(Turn::Right, length) => {
                 self.turn_right();
                 self.walk_for(*length);
-            },
+            }
         };
         *self
     }
@@ -117,22 +113,24 @@ impl State {
             Step(Turn::Left, length) => {
                 self.turn_left();
                 length
-            },
+            }
             Step(Turn::Right, length) => {
                 self.turn_right();
                 length
             }
         };
-        (0..(*length)).map(|_| {
-            self.walk_for(1);
-            self.pos
-        }).collect()
+        (0..(*length))
+            .map(|_| {
+                self.walk_for(1);
+                self.pos
+            })
+            .collect()
     }
 
     fn visit_locations(self, steps: Vec<Step>) -> Self {
-        steps
-            .into_iter()
-            .fold(self, |mut state, step| State::next_location(&mut state, &step))
+        steps.into_iter().fold(self, |mut state, step| {
+            State::next_location(&mut state, &step)
+        })
     }
 
     fn scan_steps(&mut self, steps: Vec<Step>) -> Vec<Pos> {
@@ -156,28 +154,24 @@ fn first_repeated_loc(vec: &Vec<Pos>) -> Option<&Pos> {
     None
 }
 
-
 fn parse_input(_input: &str) -> Vec<Step> {
     _input
         .to_string()
         .strip_suffix("\n")
         .unwrap_or(&_input)
         .split(", ")
-        .map(|s|
-            {
-                let (direction, value) = s.split_at(1);
-                let length: u32 = value.parse().expect(
-                    &format!(
-                        "invalid length! {:?}",
-                        value
-                    ).to_string());
-                match direction {
-                    "L" => Step(Turn::Left, length),
-                    "R" => Step(Turn::Right, length),
-                    _ => panic!("invalid turn direction!"),
-                }
+        .map(|s| {
+            let (direction, value) = s.split_at(1);
+            let length: u32 = value
+                .parse()
+                .expect(&format!("invalid length! {:?}", value).to_string());
+            match direction {
+                "L" => Step(Turn::Left, length),
+                "R" => Step(Turn::Right, length),
+                _ => panic!("invalid turn direction!"),
             }
-        ).collect()
+        })
+        .collect()
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
@@ -214,4 +208,3 @@ mod tests {
         assert_eq!(result, Some(4));
     }
 }
-
