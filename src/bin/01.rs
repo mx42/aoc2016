@@ -136,8 +136,7 @@ impl State {
     fn scan_steps(&mut self, steps: Vec<Step>) -> Vec<Pos> {
         steps
             .into_iter()
-            .map(|step| self.all_locations_towards(&step))
-            .flatten()
+            .flat_map(|step| self.all_locations_towards(&step))
             .collect()
     }
 }
@@ -158,13 +157,13 @@ fn parse_input(_input: &str) -> Vec<Step> {
     _input
         .to_string()
         .strip_suffix("\n")
-        .unwrap_or(&_input)
+        .unwrap_or(_input)
         .split(", ")
         .map(|s| {
             let (direction, value) = s.split_at(1);
-            let length: u32 = value
-                .parse()
-                .expect(&format!("invalid length! {:?}", value).to_string());
+            let length: u32 = value.parse().unwrap_or_else(|_| {
+                panic!("{}", format!("invalid length! {:?}", value).to_string())
+            });
             match direction {
                 "L" => Step(Turn::Left, length),
                 "R" => Step(Turn::Right, length),
