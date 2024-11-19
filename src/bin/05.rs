@@ -1,18 +1,17 @@
 advent_of_code::solution!(5);
 
 fn get_valid_digests(prefix: &str) -> impl Iterator<Item = String> + '_ {
-    (1..)
-        .flat_map(move |x| {
-            let data = format!("{}{:?}", prefix, x);
-            let digest = format!("{:x}", md5::compute(data));
-            if digest.starts_with("00000") {
-                Some(digest)
-            } else {
-                None
-            }
-        })
-        // .filter(|x| x.is_some())
-        // .map(|x| x.unwrap())
+    (1..).flat_map(move |x| {
+        let data = format!("{}{:?}", prefix, x);
+        let digest = format!("{:x}", md5::compute(data));
+        if digest.starts_with("00000") {
+            Some(digest)
+        } else {
+            None
+        }
+    })
+    // .filter(|x| x.is_some())
+    // .map(|x| x.unwrap())
 }
 
 pub fn part_one(input: &str) -> Option<String> {
@@ -43,7 +42,7 @@ pub fn part_two(input: &str) -> Option<String> {
                     // println!(" - put {} in {:?} - digest {}", char_to_put, pos_nth, digest);
                 }
             }
-            Some(*state)  // .clone())
+            Some(*state) // .clone())
         })
         .filter(|s| s.iter().all(|x| x.is_some()))
         .take(1)
