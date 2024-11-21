@@ -23,6 +23,7 @@ test_lib = []
 
 # Template dependencies
 chrono = { version = "0.4.38", optional = true }
+color-eyre = "0.6.3"
 dhat = { version = "0.3.3", optional = true }
 itertools = "0.13.0"
 md5 = "0.7.0"
