@@ -1,7 +1,7 @@
 advent_of_code::solution!(11);
 
-use periodic_table_on_an_enum::Element;
 use itertools::Itertools;
+use periodic_table_on_an_enum::Element;
 use std::time::SystemTime;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
@@ -21,7 +21,7 @@ impl Item {
 
 #[derive(Clone, PartialEq)]
 struct Floor {
-    items: Vec<Item>
+    items: Vec<Item>,
 }
 
 impl std::fmt::Debug for Floor {
@@ -51,11 +51,11 @@ fn is_hazardous(items: Vec<Item>) -> bool {
     }
 
     for chip in chips {
-        if !gens.contains(&chip) && gens.len() > 0 {
+        if !gens.contains(&chip) && gens.is_empty() {
             return true;
         }
     }
-    return false;
+    false
 }
 
 impl State {
@@ -65,7 +65,7 @@ impl State {
         }
         Self {
             current_floor: 0,
-            floors: floors.try_into().unwrap()
+            floors: floors.try_into().unwrap(),
         }
     }
 
@@ -79,11 +79,10 @@ impl State {
         floors[other.current_floor].items = prev_remaining;
         floors[current_floor].items = items;
 
-        let res = State {
-            current_floor: current_floor,
-            floors: floors,
-        };
-        res
+        State {
+            current_floor,
+            floors,
+        }
     }
 
     fn next_states(&self) -> Vec<State> {
@@ -120,70 +119,67 @@ impl State {
 
         subsets
             .into_iter()
-            .filter_map(
-                |set| {
-                    let remaining: Vec<Item> = items
-                        .clone().into_iter()
-                        .filter(|f| !set.contains(f))
-                        .collect();
-                    if is_hazardous(remaining.clone()) {
-                        None
-                    } else {
-                        let mut res: Vec<State> = Vec::new();
-                        if let Some(mut its) = above_items.clone() {
-                            its.extend(set.clone());
-                            its.sort();
-                            if !is_hazardous(its.clone()) {
-                                // Build above State
-                                res.push(
-                                    State::build_from(
-                                        &self,
-                                        remaining.clone(),
-                                        self.current_floor + 1,
-                                        its
-                                    )
-                                );
-                            }
+            .filter_map(|set| {
+                let remaining: Vec<Item> = items
+                    .clone()
+                    .into_iter()
+                    .filter(|f| !set.contains(f))
+                    .collect();
+                if is_hazardous(remaining.clone()) {
+                    None
+                } else {
+                    let mut res: Vec<State> = Vec::new();
+                    if let Some(mut its) = above_items.clone() {
+                        its.extend(set.clone());
+                        its.sort();
+                        if !is_hazardous(its.clone()) {
+                            // Build above State
+                            res.push(State::build_from(
+                                self,
+                                remaining.clone(),
+                                self.current_floor + 1,
+                                its,
+                            ));
                         }
-                        if let Some(mut its) = below_items.clone() {
-                            its.extend(set.clone());
-                            its.sort();
-                            if !is_hazardous(its.clone()) {
-                                // Build below State
-                                res.push(
-                                    State::build_from(
-                                        &self,
-                                        remaining.clone(),
-                                        self.current_floor - 1,
-                                        its
-                                    )
-                                );
-                            }
-                        }
-                        Some(res)
                     }
+                    if let Some(mut its) = below_items.clone() {
+                        its.extend(set.clone());
+                        its.sort();
+                        if !is_hazardous(its.clone()) {
+                            // Build below State
+                            res.push(State::build_from(
+                                self,
+                                remaining.clone(),
+                                self.current_floor - 1,
+                                its,
+                            ));
+                        }
+                    }
+                    Some(res)
                 }
-            )
-        .flatten()
-        .collect::<Vec<State>>()
+            })
+            .flatten()
+            .collect::<Vec<State>>()
     }
 
     fn is_complete(&self) -> bool {
-        self.floors[0].items.is_empty() &&
-            self.floors[1].items.is_empty() &&
-            self.floors[2].items.is_empty()
+        self.floors[0].items.is_empty()
+            && self.floors[1].items.is_empty()
+            && self.floors[2].items.is_empty()
     }
-//     fn is_complete(self) -> bool;
-
-//     fn next_states(self) -> Vec<State>;
 }
 
 impl std::fmt::Debug for State {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {        
-        let mut floors = self.floors.clone().into_iter().enumerate().collect::<Vec<_>>();
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let mut floors = self
+            .floors
+            .clone()
+            .into_iter()
+            .enumerate()
+            .collect::<Vec<_>>();
         floors.reverse();
         for (n, floor) in floors {
-            let cur = if n == self.current_floor {'>'} else {' '};
+            let cur = if n == self.current_floor { '>' } else { ' ' };
             writeln!(f, "{}{:?}{:?}", cur, n, floor)?;
         }
         Ok(())
@@ -198,28 +194,20 @@ fn parse_line(input: &str) -> Floor {
         if let Some(matter) = words.next() {
             if let Some(it_type) = words.next() {
                 // let it_type = it_type.strip_suffix(".").unwrap_or(it_type);
-                let matter = matter
-                    .strip_suffix("-compatible")
-                    .unwrap_or(matter);
-                let matter = matter
-                    .strip_suffix(",")
-                    .unwrap_or(matter);
-                items.push(
-                    match it_type {
-                        g if g.starts_with("generator") =>
-                            Item::Generator(
-                                Element::from_name(matter.into())
-                                    .expect("Missing element?!")),
-                        c if c.starts_with("microchip") =>
-                            Item::Chip(
-                                Element::from_name(matter.into())
-                                    .expect("Missing element?!")),
-                        _ => {
-                            println!("{}", it_type);
-                            panic!("invalid item type detected?!");
-                        },
+                let matter = matter.strip_suffix("-compatible").unwrap_or(matter);
+                let matter = matter.strip_suffix(",").unwrap_or(matter);
+                items.push(match it_type {
+                    g if g.starts_with("generator") => {
+                        Item::Generator(Element::from_name(matter).expect("Missing element?!"))
                     }
-                );
+                    c if c.starts_with("microchip") => {
+                        Item::Chip(Element::from_name(matter).expect("Missing element?!"))
+                    }
+                    _ => {
+                        println!("{}", it_type);
+                        panic!("invalid item type detected?!");
+                    }
+                });
             } else {
                 println!("input: {:?}", input);
                 panic!("invalid input format?");
@@ -229,13 +217,19 @@ fn parse_line(input: &str) -> Floor {
         }
     }
     items.sort();
-    Floor {
-        items
-    }
+    Floor { items }
 }
 
-fn walk_through_states(iteration: usize, states: Vec<State>, saved_states: &mut [Vec<State>; 4], start_time: SystemTime) -> (usize, State) {
-    println!("         ## after {:?}s", start_time.elapsed().unwrap().as_secs());
+fn walk_through_states(
+    iteration: usize,
+    states: Vec<State>,
+    saved_states: &mut [Vec<State>; 4],
+    start_time: SystemTime,
+) -> (usize, State) {
+    println!(
+        "         ## after {:?}s",
+        start_time.elapsed().unwrap().as_secs()
+    );
     println!("Iteration {:?}", iteration);
     println!("States: {:?}", states.len());
     println!("Saved states:");
@@ -248,13 +242,11 @@ fn walk_through_states(iteration: usize, states: Vec<State>, saved_states: &mut 
         .into_iter()
         .flat_map(|s| s.next_states())
         .collect::<Vec<State>>();
-    let complete: Vec<State> = states.clone().into_iter().filter_map(|s|
-        if s.is_complete() {
-            Some(s)
-        } else {
-            None
-        }
-    ).collect();
+    let complete: Vec<State> = states
+        .clone()
+        .into_iter()
+        .filter_map(|s| if s.is_complete() { Some(s) } else { None })
+        .collect();
     if !complete.is_empty() {
         (iteration, complete[0].clone())
     } else {
@@ -281,16 +273,15 @@ pub fn part_one(input: &str) -> Option<usize> {
         .map(parse_line)
         .collect();
     let state = State::init(floors);
-    let mut saved: [Vec<State>; 4] = [
-        vec![state.clone()], vec![], vec![], vec![]
-    ];
-    let (iterations, _st) = walk_through_states(1, state.next_states(), &mut saved, SystemTime::now());
+    let mut saved: [Vec<State>; 4] = [vec![state.clone()], vec![], vec![], vec![]];
+    let (iterations, _st) =
+        walk_through_states(1, state.next_states(), &mut saved, SystemTime::now());
     // println!("{:#?}", _st);
     // println!("{:?}", iterations);
     Some(iterations + 1)
 }
 
-pub fn part_two(input: &str) -> Option<usize> {
+pub fn part_two(_input: &str) -> Option<usize> {
     // let mut floors: Vec<Floor> = input
     //     .strip_suffix("\n")
     //     .unwrap_or(input)
