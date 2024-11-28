@@ -2,6 +2,7 @@ advent_of_code::solution!(11);
 
 use periodic_table_on_an_enum::Element;
 use itertools::Itertools;
+use std::time::SystemTime;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
 enum Item {
@@ -13,7 +14,7 @@ impl Item {
     fn to_string(&self) -> String {
         match self {
             Item::Generator(e) => format!("[{:<2}G]", e.get_symbol()),
-            Item::Chip(e) => format!("[{:<2}C]", e.get_symbol()),
+            Item::Chip(e) => format!("[{:<2}M]", e.get_symbol()),
         }
     }
 }
@@ -35,7 +36,6 @@ impl std::fmt::Debug for Floor {
 
 #[derive(Clone, PartialEq)]
 struct State {
-    previous: Option<Box<State>>,
     floors: [Floor; 4],
     current_floor: usize,
 }
@@ -64,7 +64,6 @@ impl State {
             panic!("Wrong number of floors !!");
         }
         Self {
-            previous: None,
             current_floor: 0,
             floors: floors.try_into().unwrap()
         }
@@ -81,7 +80,6 @@ impl State {
         floors[current_floor].items = items;
 
         let res = State {
-            previous: None,
             current_floor: current_floor,
             floors: floors,
         };
@@ -98,6 +96,13 @@ impl State {
         for item in &items {
             subsets.push(vec![item.clone()]);
         }
+        // for comb in items.clone().iter().filter(|x| match x {Item::Generator(_) => true, _ => false}).combinations(2) {
+        //     subsets.push(comb.into_iter().cloned().collect());
+        // }
+        // for comb in items.clone().iter().filter(|x| match x {Item::Chip(_) => true, _ => false}).combinations(2) {
+        //     subsets.push(comb.into_iter().cloned().collect());
+        // }
+
         for comb in items.iter().combinations(2) {
             subsets.push(comb.into_iter().cloned().collect());
         }
@@ -113,61 +118,54 @@ impl State {
             None
         };
 
-        let res = subsets.into_iter().filter_map(
-            |set| {
-                let remaining: Vec<Item> = items
-                    .clone().into_iter()
-                    .filter(|f| !set.contains(f))
-                    .collect();
-                if is_hazardous(remaining.clone()) {
-                    None
-                } else {
-                    let mut res: Vec<State> = Vec::new();
-                    if let Some(mut its) = above_items.clone() {
-                        its.extend(set.clone());
-                        its.sort();
-                        if !is_hazardous(remaining.clone()) {
-                            // Build above State
-                            let mut new_state = State::build_from(
-                                &self,
-                                remaining.clone(),
-                                self.current_floor + 1,
-                                its
-                            );
-                            if self.previous != Some(Box::new(new_state.clone())) {
-                                let mut prev = self.clone();
-                                prev.previous = None;
-                                new_state.previous = Some(Box::new(prev));
-                                res.push(new_state);
+        subsets
+            .into_iter()
+            .filter_map(
+                |set| {
+                    let remaining: Vec<Item> = items
+                        .clone().into_iter()
+                        .filter(|f| !set.contains(f))
+                        .collect();
+                    if is_hazardous(remaining.clone()) {
+                        None
+                    } else {
+                        let mut res: Vec<State> = Vec::new();
+                        if let Some(mut its) = above_items.clone() {
+                            its.extend(set.clone());
+                            its.sort();
+                            if !is_hazardous(its.clone()) {
+                                // Build above State
+                                res.push(
+                                    State::build_from(
+                                        &self,
+                                        remaining.clone(),
+                                        self.current_floor + 1,
+                                        its
+                                    )
+                                );
                             }
                         }
-                    }
-                    if let Some(mut its) = below_items.clone() {
-                        its.extend(set.clone());
-                        its.sort();
-                        if !is_hazardous(remaining.clone()) {
-                            // Build below State
-                            let mut new_state = State::build_from(
-                                &self,
-                                remaining.clone(),
-                                self.current_floor - 1,
-                                its
-                            );
-                            if self.previous != Some(Box::new(new_state.clone())) {
-                                let mut prev = self.clone();
-                                prev.previous = None;
-                                new_state.previous = Some(Box::new(prev));
-                                res.push(new_state);
+                        if let Some(mut its) = below_items.clone() {
+                            its.extend(set.clone());
+                            its.sort();
+                            if !is_hazardous(its.clone()) {
+                                // Build below State
+                                res.push(
+                                    State::build_from(
+                                        &self,
+                                        remaining.clone(),
+                                        self.current_floor - 1,
+                                        its
+                                    )
+                                );
                             }
                         }
+                        Some(res)
                     }
-                    Some(res)
                 }
-            }
-        )
+            )
         .flatten()
-        .collect::<Vec<State>>();
-        res
+        .collect::<Vec<State>>()
     }
 
     fn is_complete(&self) -> bool {
@@ -181,7 +179,7 @@ impl State {
 }
 
 impl std::fmt::Debug for State {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {        
         let mut floors = self.floors.clone().into_iter().enumerate().collect::<Vec<_>>();
         floors.reverse();
         for (n, floor) in floors {
@@ -236,14 +234,16 @@ fn parse_line(input: &str) -> Floor {
     }
 }
 
-fn walk_through_states(iteration: usize, states: Vec<State>) -> (usize, State) {
-    // println!("Iteration {:?}", iteration);
-    // println!("States: {:?}", states);
+fn walk_through_states(iteration: usize, states: Vec<State>, saved_states: &mut [Vec<State>; 4], start_time: SystemTime) -> (usize, State) {
+    println!("         ## after {:?}s", start_time.elapsed().unwrap().as_secs());
+    println!("Iteration {:?}", iteration);
+    println!("States: {:?}", states.len());
+    println!("Saved states:");
+    println!("  - 4F: {:?}", saved_states[3].len());
+    println!("  - 3F: {:?}", saved_states[2].len());
+    println!("  - 2F: {:?}", saved_states[1].len());
+    println!("  - 1F: {:?}", saved_states[0].len());
 
-    if iteration > 10 {
-        return (42, states[0].clone());
-    }
-    
     let states = states
         .into_iter()
         .flat_map(|s| s.next_states())
@@ -258,7 +258,18 @@ fn walk_through_states(iteration: usize, states: Vec<State>) -> (usize, State) {
     if !complete.is_empty() {
         (iteration, complete[0].clone())
     } else {
-        walk_through_states(iteration + 1, states)
+        let states: Vec<State> = states
+            .into_iter()
+            .filter_map(|s| {
+                if saved_states[s.current_floor].contains(&s) {
+                    None
+                } else {
+                    saved_states[s.current_floor].push(s.clone());
+                    Some(s)
+                }
+            })
+            .collect();
+        walk_through_states(iteration + 1, states, saved_states, start_time)
     }
 }
 
@@ -270,22 +281,39 @@ pub fn part_one(input: &str) -> Option<usize> {
         .map(parse_line)
         .collect();
     let state = State::init(floors);
-
-    // let states = state.next_states();
-
-    // println!("Ok, trying a new one:");
-
-    // let next_states = states[0].next_states();
-
-    // None
-    
-    let (iterations, st) = walk_through_states(1, state.next_states());
-    println!("{:#?}", st);
-    println!("{:?}", iterations);
-    Some(iterations)
+    let mut saved: [Vec<State>; 4] = [
+        vec![state.clone()], vec![], vec![], vec![]
+    ];
+    let (iterations, _st) = walk_through_states(1, state.next_states(), &mut saved, SystemTime::now());
+    // println!("{:#?}", _st);
+    // println!("{:?}", iterations);
+    Some(iterations + 1)
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<usize> {
+    // let mut floors: Vec<Floor> = input
+    //     .strip_suffix("\n")
+    //     .unwrap_or(input)
+    //     .lines()
+    //     .map(parse_line)
+    //     .collect();
+    // floors[0].items.extend(
+    //     vec![
+    //         Item::Generator(Element::from_name("europium").unwrap()),  // well ... original elements don't exist, duh...
+    //         Item::Generator(Element::from_name("lithium").unwrap()),
+    //         Item::Chip(Element::from_name("europium").unwrap()),
+    //         Item::Chip(Element::from_name("lithium").unwrap()),
+    //     ]
+    // );
+    // floors[0].items.sort();
+    // let state = State::init(floors);
+    // let mut saved: [Vec<State>; 4] = [
+    //     vec![state.clone()], vec![], vec![], vec![],
+    // ];
+    // let (iterations, _st) = walk_through_states(1, state.next_states(), &mut saved, SystemTime::now());
+    // // println!("{:#?}", _st);
+    // // println!("{:?}", iterations);
+    // Some(iterations + 1)
     None
 }
 
@@ -296,12 +324,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(42));
+        assert_eq!(result, Some(11));
     }
 
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(23));
     }
 }
