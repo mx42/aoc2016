@@ -3,7 +3,7 @@ advent_of_code::solution!(13);
 #[derive(PartialEq)]
 enum Type {
     Wall,
-    Empty
+    Empty,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -26,12 +26,8 @@ impl Pos {
         Self { x: 31, y: 39 }
     }
     fn get_type(&self, nbr: u32) -> Type {
-        let nb: u32 = self.x * self.x
-            + 3 * self.x
-            + 2 * self.x * self.y
-            + self.y
-            + self.y * self.y
-            + nbr;
+        let nb: u32 =
+            self.x * self.x + 3 * self.x + 2 * self.x * self.y + self.y + self.y * self.y + nbr;
         if nb.count_ones() & 1 == 1 {
             Type::Wall
         } else {
@@ -62,22 +58,19 @@ fn walk_around(paths: Vec<Vec<Pos>>, known: &mut Vec<Pos>, nbr: u32) -> Vec<Vec<
     let mut to_add: Vec<Pos> = Vec::new();
     let new_paths: Vec<Vec<Pos>> = paths
         .into_iter()
-        .flat_map(
-            |path| {
-                let ps = path[0]
-                    .empty_neighbors(nbr)
-                    .into_iter()
-                    .filter(|p| !known.contains(p))
-                    .map(|h| {
-                        to_add.push(h.clone());
-                        let mut p = vec![h];
-                        p.extend(path.clone());
-                        p
-                    })
-                    .collect::<Vec<Vec<Pos>>>();
-                ps
-            }
-        )
+        .flat_map(|path| {
+            path[0]
+                .empty_neighbors(nbr)
+                .into_iter()
+                .filter(|p| !known.contains(p))
+                .map(|h| {
+                    to_add.push(h.clone());
+                    let mut p = vec![h];
+                    p.extend(path.clone());
+                    p
+                })
+                .collect::<Vec<Vec<Pos>>>()
+        })
         .collect::<Vec<Vec<Pos>>>();
     known.append(&mut to_add);
     new_paths
@@ -95,18 +88,17 @@ fn search_for_pos(paths: Vec<Vec<Pos>>, known: &mut Vec<Pos>, nbr: u32, dest: Po
 
 fn take_n_steps(paths: Vec<Vec<Pos>>, known: &mut Vec<Pos>, nbr: u32, steps: usize) {
     if steps > 0 {
-        take_n_steps(
-            walk_around(paths, known, nbr),
-            known,
-            nbr,
-            steps - 1
-        )
+        take_n_steps(walk_around(paths, known, nbr), known, nbr, steps - 1)
     }
 }
 
-fn print_maze(path: &Vec<Pos>, nbr: u32) {
+fn print_maze(path: &[Pos], nbr: u32) {
     let origin = Pos::origin();
-    let end = if nbr == 10 { Pos::dest_test() } else { Pos::dest() };
+    let end = if nbr == 10 {
+        Pos::dest_test()
+    } else {
+        Pos::dest()
+    };
     for y in 0..50 {
         for x in 0..80 {
             let p = Pos::init(x, y);
@@ -123,30 +115,41 @@ fn print_maze(path: &Vec<Pos>, nbr: u32) {
                 }
             }
         }
-        println!("");
+        println!();
     }
-    println!("");
+    println!();
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
-    let nbr = input.strip_suffix("\n").unwrap_or(input).parse::<u32>().unwrap();
+    let nbr = input
+        .strip_suffix("\n")
+        .unwrap_or(input)
+        .parse::<u32>()
+        .unwrap();
 
     let initial_path = vec![vec![Pos::origin()]];
     let mut known = vec![Pos::origin()];
-    let dest = if nbr == 10 { Pos::dest_test() } else { Pos::dest() };
-    
+    let dest = if nbr == 10 {
+        Pos::dest_test()
+    } else {
+        Pos::dest()
+    };
+
     let path = search_for_pos(initial_path, &mut known, nbr, dest);
     print_maze(&path, nbr);
     Some(path.len() - 1)
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let nbr = input.strip_suffix("\n").unwrap_or(input).parse::<u32>().unwrap();
+    let nbr = input
+        .strip_suffix("\n")
+        .unwrap_or(input)
+        .parse::<u32>()
+        .unwrap();
 
     let initial_path = vec![vec![Pos::origin()]];
     let mut known = vec![Pos::origin()];
-    let dest = if nbr == 10 { Pos::dest_test() } else { Pos::dest() };
-    
+
     take_n_steps(initial_path, &mut known, nbr, 51);
     print_maze(&known, nbr);
     Some(known.len())
