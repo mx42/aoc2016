@@ -6,7 +6,7 @@ enum Type {
     Empty,
 }
 
-#[derive(Debug, Clone, Hash, Eq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Eq, Ord, PartialOrd)]
 struct Pos {
     x: u32,
     y: u32,
@@ -24,13 +24,25 @@ impl Pos {
         Self { x, y, depth }
     }
     fn origin() -> Self {
-        Self { x: 1, y: 1, depth: 1 }
+        Self {
+            x: 1,
+            y: 1,
+            depth: 1,
+        }
     }
     fn dest_test() -> Self {
-        Self { x: 7, y: 4, depth: 0 }
+        Self {
+            x: 7,
+            y: 4,
+            depth: 0,
+        }
     }
     fn dest() -> Self {
-        Self { x: 31, y: 39, depth: 0 }
+        Self {
+            x: 31,
+            y: 39,
+            depth: 0,
+        }
     }
     fn get_type(&self, nbr: u32) -> Type {
         let nb: u32 =
@@ -149,7 +161,7 @@ pub fn part_two(input: &str) -> Option<usize> {
     let mut known = vec![Pos::origin()];
 
     take_n_steps(initial_path, &mut known, nbr, 50);
-        
+
     // let mut known_store: HashMap<Pos, usize> = HashMap::new();
     // for elem in &known {
     //     let mut pos = elem.clone();

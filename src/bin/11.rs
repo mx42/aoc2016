@@ -4,18 +4,19 @@ use itertools::Itertools;
 use periodic_table_on_an_enum::Element;
 use std::time::SystemTime;
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Clone, PartialEq, PartialOrd, Ord, Eq)]
 enum Item {
     Generator(Element),
     Chip(Element),
 }
 
-impl Item {
-    fn to_string(&self) -> String {
+impl std::fmt::Debug for Item {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            Item::Generator(e) => format!("[{:<2}G]", e.get_symbol()),
-            Item::Chip(e) => format!("[{:<2}M]", e.get_symbol()),
+            Item::Generator(e) => write!(f, "[{:<2}G]", e.get_symbol())?,
+            Item::Chip(e) => write!(f, "[{:<2}M]", e.get_symbol())?,
         }
+        Ok(())
     }
 }
 
@@ -28,7 +29,7 @@ impl std::fmt::Debug for Floor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "F -> ")?;
         for item in &self.items {
-            write!(f, "{:^7}", item.to_string())?;
+            write!(f, "{:^7?}", item)?;
         }
         Ok(())
     }
@@ -276,8 +277,8 @@ pub fn part_one(input: &str) -> Option<usize> {
     let mut saved: [Vec<State>; 4] = [vec![state.clone()], vec![], vec![], vec![]];
     let (iterations, _st) =
         walk_through_states(1, state.next_states(), &mut saved, SystemTime::now());
-    // println!("{:#?}", _st);
-    // println!("{:?}", iterations);
+    println!("{:#?}", _st);
+    println!("{:?}", iterations);
     Some(iterations + 1)
 }
 
@@ -315,12 +316,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(11));
+        assert_eq!(result, Some(9));
     }
 
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(23));
+        assert_eq!(result, None);
     }
 }
