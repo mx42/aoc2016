@@ -191,7 +191,7 @@ fn parse_line(input: &str) -> Floor {
     let mut words = input.split_whitespace();
     let mut items: Vec<Item> = Vec::new();
     loop {
-        words.by_ref().skip_while(|&w| w != "a").next();
+        words.by_ref().find(|&w| w == "a");  // skip_while(|&w| w != "a").next();
         if let Some(matter) = words.next() {
             if let Some(it_type) = words.next() {
                 // let it_type = it_type.strip_suffix(".").unwrap_or(it_type);
